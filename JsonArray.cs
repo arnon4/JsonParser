@@ -42,8 +42,8 @@ public sealed class JsonArray {
         try {
             return typeof(T) switch {
                 Type t when t == typeof(string) => (T)(object)_strings[index],
-                Type t when t == typeof(long) || t == typeof(int) || t == typeof(byte) || t == typeof(short) => (T)(object)_longs[index],
-                Type t when t == typeof(decimal) || t == typeof(double) || t == typeof(float) => (T)(object)_decimals[index],
+                Type t when t == typeof(long) || t == typeof(int) || t == typeof(byte) || t == typeof(short) => (T)Convert.ChangeType(_longs[index], typeof(T)),
+                Type t when t == typeof(decimal) || t == typeof(double) || t == typeof(float) => (T)Convert.ChangeType(_decimals[index], typeof(T)),
                 Type t when t == typeof(bool) => (T)(object)_bools[index],
                 Type t when t == typeof(JsonObject) => (T)(object)_objects[index],
                 Type t when t == typeof(JsonArray) => (T)(object)_arrays[index],

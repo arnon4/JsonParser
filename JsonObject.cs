@@ -1,5 +1,6 @@
 ﻿namespace Parser;
 
+using System;
 using System.Text;
 using JsonExceptions;
 public sealed class JsonObject {
@@ -53,8 +54,8 @@ public sealed class JsonObject {
         try {
             return typeof(T) switch {
                 Type t when t == typeof(string) => (T)(object)_strings[key],
-                Type t when t == typeof(long) || t == typeof(int) || t == typeof(byte) || t == typeof(short) => (T)(object)_longs[key],
-                Type t when t == typeof(decimal) || t == typeof(double) || t == typeof(float) => (T)(object)_decimals[key],
+                Type t when t == typeof(long) || t == typeof(int) || t == typeof(byte) || t == typeof(short) => (T)Convert.ChangeType(_longs[key], typeof(T)),
+                Type t when t == typeof(decimal) || t == typeof(double) || t == typeof(float) => (T)Convert.ChangeType(_decimals[key], typeof(T)),
                 Type t when t == typeof(bool) => (T)(object)_bools[key],
                 Type t when t == typeof(JsonObject) => (T)(object)_objects[key],
                 Type t when t == typeof(JsonArray) => (T)(object)_arrays[key],

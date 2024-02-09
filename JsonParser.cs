@@ -10,7 +10,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     private JsonObject? _object;
     private JsonArray? _array;
     public void Parse() {
-        SkipWhitespace(TokenType.OpeningBrace);
+        SkipWhitespace(TokenType.Any);
         if (IsOpeningBrace()) {
             _object = ParseObject();
         } else if (IsOpeningBracket()) {
@@ -56,7 +56,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
     private JsonObject ParseObject() {
         if (_lines[_lineIndex].Length > 1) {
-            SkipToNextChar();
+            AdvanceCharIndex();
         } else {
             _lineIndex++;
             _charIndex = 0;
@@ -76,22 +76,15 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
         while (true) {
             string key = ParseString();
-            SkipToNextChar();
+            AdvanceCharIndex();
 
             SkipWhitespace(TokenType.Colon);
-            SkipToNextChar();
+            AdvanceCharIndex();
             SkipWhitespace(TokenType.Any);
             AddValue(obj, key);
 
-            SkipToNextChar();
-            while (_lineIndex < _lines.Count && IsWhiteSpace()) {
-                SkipToNextChar();
-                if (_charIndex == _lines[_lineIndex].Length) {
-                    _lineIndex++;
-                    _charIndex = 0;
-                }
-            }
-
+            AdvanceCharIndex();
+            SkipWhitespace(TokenType.Any);
             if (_lineIndex == _lines.Count) {
                 throw new UnexpectedEndOfInputException(_lineIndex);
             }
@@ -100,7 +93,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 break;
             }
 
-            SkipToNextChar();
+            AdvanceCharIndex();
             SkipWhitespace(TokenType.Quote);
         }
 
@@ -133,6 +126,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 obj.Add(key, ParseBoolean());
                 break;
             case 'n':
+                ParseNull();
                 obj.Add(key);
                 break;
             case '-':
@@ -143,7 +137,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     }
     private JsonArray ParseArray() {
         if (_lines[_lineIndex].Length > 1) {
-            SkipToNextChar();
+            AdvanceCharIndex();
         } else {
             _lineIndex++;
             _charIndex = 0;
@@ -163,15 +157,8 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
             AddValue(key, array);
 
-            SkipToNextChar();
-            while (_lineIndex < _lines.Count && IsWhiteSpace()) {
-                SkipToNextChar();
-                if (_charIndex == _lines[_lineIndex].Length) {
-                    _lineIndex++;
-                    _charIndex = 0;
-                }
-            }
-
+            AdvanceCharIndex();
+            SkipWhitespace(TokenType.Any);
             if (_lineIndex == _lines.Count) {
                 throw new UnexpectedEndOfInputException(_lineIndex);
             }
@@ -180,9 +167,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 break;
             }
 
-            SkipToNextChar();
-            SkipWhitespace(TokenType.Any);
-
+            AdvanceCharIndex();
             key++;
         }
 
@@ -210,6 +195,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 arr.Add(index, ParseBoolean());
                 break;
             case 'n':
+                ParseNull();
                 arr.Add(index);
                 break;
             case '-':
@@ -223,7 +209,23 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     }
     private void ParseNumber(int index, JsonArray array) {
         int start = _charIndex;
+        int startLine = _lineIndex;
         while (true) {
+            if (_lineIndex > startLine) {
+                string number = _lines[startLine][start..];
+                if (long.TryParse(number, out long longValue)) {
+                    array.Add(index, longValue);
+                    break;
+                }
+
+                if (decimal.TryParse(number, out decimal decimalValue)) {
+                    array.Add(index, decimalValue);
+                    break;
+                }
+
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+            }
+
             if (IsWhiteSpace() || IsComma() || IsClosingBracket()) {
                 string number = _lines[_lineIndex][start.._charIndex];
                 if (long.TryParse(number, out long longValue)) {
@@ -239,8 +241,10 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
             }
 
-            SkipToNextChar();
+            AdvanceCharIndex();
         }
+
+        _charIndex--;
     }
 
     /// <summary>
@@ -283,7 +287,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
             }
 
-            SkipToNextChar();
+            AdvanceCharIndex();
         }
 
         // bring _charIndex back to the last character of the number
@@ -298,10 +302,10 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     private bool IsClosingBrace() {
         return _lines[_lineIndex][_charIndex] == '}';
     }
-    private object? ParseNull() {
+    private void ParseNull() {
         if (_lines[_lineIndex].Substring(_charIndex, 4) == "null") {
             _charIndex += 3;
-            return null;
+            return;
         }
 
         throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
@@ -316,7 +320,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     /// <exception cref="UnexpectedCharacterException"></exception>
     /// <returns>the parsed string</returns>
     private string ParseString() {
-        SkipToNextChar();
+        AdvanceCharIndex();
         int start = _charIndex;
         while (true) {
             if (_lines[_lineIndex][_charIndex] == '"') {
@@ -337,13 +341,13 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                     break;
                 }
 
-                SkipToNextChar();
+                AdvanceCharIndex();
                 if (_charIndex == _lines[_lineIndex].Length) {
                     throw new MissingClosingQuoteException(_lineIndex);
                 }
             }
 
-            SkipToNextChar();
+            AdvanceCharIndex();
         }
 
         return _lines[_lineIndex][start.._charIndex];
@@ -377,7 +381,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     /// <param name="token">determines the error to be thrown if we don't find a character before the end of input.</param>
     private void SkipWhitespace(TokenType token) {
         while (IsWhiteSpace()) {
-            SkipToNextChar();
+            AdvanceCharIndex();
             if (_charIndex == _lines[_lineIndex].Length) {
                 _lineIndex++;
                 _charIndex = 0;
@@ -418,7 +422,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         char c = _lines[_lineIndex][_charIndex];
         return char.IsWhiteSpace(c) || c == '\n' || c == '\r' || c == '\t';
     }
-    private void SkipToNextChar() {
+    private void AdvanceCharIndex() {
         _charIndex++;
         if (_charIndex == _lines[_lineIndex].Length) {
             _lineIndex++;
