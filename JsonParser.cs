@@ -137,7 +137,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 obj.Add(key, ParseBoolean());
                 break;
             case 'n':
-                obj.Add(key, ParseNull());
+                obj.Add(key);
                 break;
             case '-':
             default:
@@ -145,7 +145,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 break;
         }
     }
-
     private JsonArray ParseArray() {
         if (_lines[_lineIndex].Length > 1) {
             SkipToNextChar();
@@ -197,7 +196,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
         return array;
     }
-
     private void AddValue(int index, JsonArray arr) {
         switch (_lines[_lineIndex][_charIndex]) {
             case '{':
@@ -216,7 +214,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 arr.Add(index, ParseBoolean());
                 break;
             case 'n':
-                arr.Add(index, ParseNull());
+                arr.Add(index);
                 break;
             case '-':
             default:
@@ -227,7 +225,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     private bool IsClosingBracket() {
         return _lines[_lineIndex][_charIndex] == ']';
     }
-
     private void ParseNumber(int index, JsonArray array) {
         int start = _charIndex;
         while (true) {
@@ -296,23 +293,15 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         // bring _charIndex back to the last character of the number
         _charIndex--;
     }
-
-    private bool IsColon() {
-        return _lines[_lineIndex][_charIndex] == ':';
-    }
     private bool IsComma() {
-        char c = _lines[_lineIndex][_charIndex];
         return _lines[_lineIndex][_charIndex] == ',';
     }
-
     private bool IsQuote() {
         return _lines[_lineIndex][_charIndex] == '"';
     }
-
     private bool IsClosingBrace() {
         return _lines[_lineIndex][_charIndex] == '}';
     }
-
     private object? ParseNull() {
         if (_lines[_lineIndex].Substring(_charIndex, 4) == "null") {
             _charIndex += 3;
@@ -433,7 +422,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         char c = _lines[_lineIndex][_charIndex];
         return char.IsWhiteSpace(c) || c == '\n' || c == '\r' || c == '\t';
     }
-
     private void SkipToNextChar() {
         _charIndex++;
         if (_charIndex == _lines[_lineIndex].Length) {

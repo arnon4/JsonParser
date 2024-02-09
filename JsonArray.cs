@@ -7,30 +7,37 @@ public sealed class JsonArray {
     private readonly Dictionary<int, long> _longs = [];
     private readonly Dictionary<int, decimal> _decimals = [];
     private readonly Dictionary<int, bool> _bools = [];
-    private readonly Dictionary<int, object?> _nulls = [];
+    private readonly List<int> _nulls = [];
     private readonly Dictionary<int, JsonObject> _objects = [];
     private readonly Dictionary<int, JsonArray> _arrays = [];
-    public void Add(int key, string value) {
+    internal void Add(int key, string value) {
         _strings.Add(key, value);
     }
-    public void Add(int key, long value) {
+    internal void Add(int key, long value) {
         _longs.Add(key, value);
     }
-    public void Add(int key, decimal value) {
+    internal void Add(int key, decimal value) {
         _decimals.Add(key, value);
     }
-    public void Add(int key, bool value) {
+    internal void Add(int key, bool value) {
         _bools.Add(key, value);
     }
-    public void Add(int key, object? value) {
-        _nulls.Add(key, value);
+    internal void Add(int key) {
+        _nulls.Add(key);
     }
-    public void Add(int key, JsonObject value) {
+    internal void Add(int key, JsonObject value) {
         _objects.Add(key, value);
     }
-    public void Add(int key, JsonArray value) {
+    internal void Add(int key, JsonArray value) {
         _arrays.Add(key, value);
     }
+    /// <summary>
+    /// Retrieves the value at the specified index. If the index is not found, returns <see langword="null"/>.
+    /// It is recommended to use <see cref="Count"/> to check if the index exists.
+    /// </summary>
+    /// <typeparam name="T">The object type at the given index.</typeparam>
+    /// <param name="index">The position from which the object is retrieved.</param>
+    /// <returns>An object of type <typeparamref name="T"/>, or <see langword="null"/> if it doesn't exist.</returns>
     public T? Get<T>(int index) {
         try {
             return typeof(T) switch {
@@ -40,11 +47,79 @@ public sealed class JsonArray {
                 Type t when t == typeof(bool) => (T)(object)_bools[index],
                 Type t when t == typeof(JsonObject) => (T)(object)_objects[index],
                 Type t when t == typeof(JsonArray) => (T)(object)_arrays[index],
-                _ => (T?)_nulls[index]
+                _ =>  default
             };
         } catch {
-            throw new ValueNotFoundException(typeof(T), index);
+            return default;
         }
+    }
+    /// <summary>
+    /// Returns the type of the object at the specified index. If the index is not found, returns <see langword="null"/>.
+    /// It is recommended to use <see cref="Count"/> to check if the index exists.
+    /// </summary>
+    /// <param name="index">The position at which the type is checked.</param>
+    /// <returns>The <see cref="System.Type"/> of the object at the requested index, or <see langword="null"/> if it doesn't exist.</returns>
+    public Type? Type(int index) {
+        if (_strings.ContainsKey(index)) {
+            return typeof(string);
+        }
+        if (_longs.ContainsKey(index)) {
+            return typeof(long);
+        }
+        if (_decimals.ContainsKey(index)) {
+            return typeof(decimal);
+        }
+        if (_bools.ContainsKey(index)) {
+            return typeof(bool);
+        }
+        if (_nulls.Contains(index)) {
+            return typeof(object);
+        }
+        if (_objects.ContainsKey(index)) {
+            return typeof(JsonObject);
+        }
+        if (_arrays.ContainsKey(index)) {
+            return typeof(JsonArray);
+        }
+        return null;
+    }
+    /// <summary>
+    /// Returns the number of elements in the <see cref="JsonArray"/>.
+    /// </summary>
+    /// <returns>The number of elements in this object.</returns>
+    public int Count() {
+        return _strings.Count + _longs.Count +
+            _decimals.Count + _bools.Count +
+            _nulls.Count + _objects.Count + _arrays.Count;
+    }
+    /// <summary>
+    /// Returns a new <see cref="JsonArray"/> with all the unique items in the original <see cref="JsonArray"/>.
+    /// </summary>
+    /// <returns>A <see cref="JsonArray"/> with duplicate values removed.</returns>
+    public JsonArray Unique() {
+        JsonArray unique = new();
+        foreach (var item in _strings.Values.ToHashSet()) {
+            unique.Add(unique.Count(), item);
+        }
+        foreach (var item in _longs.Values.ToHashSet()) {
+            unique.Add(unique.Count(), item);
+        }
+        foreach (var item in _decimals.Values.ToHashSet()) {
+            unique.Add(unique.Count(), item);
+        }
+        foreach (var item in _bools.Values.ToHashSet()) {
+            unique.Add(unique.Count(), item);
+        }
+        foreach (var item in _nulls) {
+            unique.Add(unique.Count(), item);
+        }
+        foreach (var item in _objects.Values.ToHashSet()) {
+            unique.Add(unique.Count(), item);
+        }
+        foreach (var item in _arrays.Values.ToHashSet()) {
+            unique.Add(unique.Count(), item);
+        }
+        return unique;
     }
     public override string ToString() {
         Dictionary<int, string> values = [];
@@ -60,7 +135,7 @@ public sealed class JsonArray {
         foreach (var (key, value) in _bools) {
             values.Add(key, value.ToString().ToLower());
         }
-        foreach (var (key, value) in _nulls) {
+        foreach (var key in _nulls) {
             values.Add(key, "null");
         }
         foreach (var (key, value) in _objects) {
