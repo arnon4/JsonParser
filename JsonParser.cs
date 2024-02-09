@@ -63,10 +63,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         }
 
         JsonObject obj = new();
-        // Opening brace must be followed by whitespace
-        if (!IsWhiteSpace()) {
-            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
-        }
 
         SkipWhitespace(TokenType.Any);
 
