@@ -7,7 +7,7 @@ I also wanted to be able to parse JSON objects that I didn't know the structure 
 
 I find this useful for parsing configuration files which can grow quite large, and because of this are annoying to maintain as C# classes.
 
-## QuickstartA
+## Quickstart
 
 Using the following JSON object as an example, stored in example.json:
 
