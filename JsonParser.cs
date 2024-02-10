@@ -1,10 +1,10 @@
 using JsonExceptions;
 
-namespace Parser;
+namespace JsonParser;
 public sealed class JsonParser(IEnumerable<string> lines) {
     private readonly List<string> _lines = lines.ToList();
     private int _lineIndex = 0;
-    private int _charIndex = 0;
+    private int _columnIndex = 0;
 
     // Either _object or _array will be non-null, but not both
     private JsonObject? _object;
@@ -16,7 +16,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         } else if (IsOpeningBracket()) {
             _array = ParseArray();
         } else {
-            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
         }
     }
     public T GetParsed<T>() {
@@ -48,10 +48,10 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         return _object is not null ? _object.ToString() : _array?.ToString() ?? "";
     }
     private bool IsOpeningBracket() {
-        return _lines[_lineIndex][_charIndex] == '[';
+        return _lines[_lineIndex][_columnIndex] == '[';
     }
     private bool IsOpeningBrace() {
-        return _lines[_lineIndex][_charIndex] == '{';
+        return _lines[_lineIndex][_columnIndex] == '{';
     }
 
     private JsonObject ParseObject() {
@@ -59,7 +59,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
             AdvanceCharIndex();
         } else {
             _lineIndex++;
-            _charIndex = 0;
+            _columnIndex = 0;
         }
 
         JsonObject obj = new();
@@ -71,7 +71,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         }
 
         if (!IsQuote()) {
-            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
         }
 
         while (true) {
@@ -106,10 +106,10 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
     private void AddValue(JsonObject obj, string key) {
         if (obj.ContainsKey(key)) {
-            throw new DuplicateKeyException(key, _lineIndex, _charIndex);
+            throw new DuplicateKeyException(key, _lineIndex, _columnIndex);
         }
 
-        switch (_lines[_lineIndex][_charIndex]) {
+        switch (_lines[_lineIndex][_columnIndex]) {
             case '{':
             JsonObject nestedObj = ParseObject();
             obj.Add(key, nestedObj);
@@ -140,7 +140,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
             AdvanceCharIndex();
         } else {
             _lineIndex++;
-            _charIndex = 0;
+            _columnIndex = 0;
         }
 
         JsonArray array = new();
@@ -178,7 +178,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         return array;
     }
     private void AddValue(int index, JsonArray arr) {
-        switch (_lines[_lineIndex][_charIndex]) {
+        switch (_lines[_lineIndex][_columnIndex]) {
             case '{':
             JsonObject nestedObj = ParseObject();
             arr.Add(index, nestedObj);
@@ -205,10 +205,10 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         }
     }
     private bool IsClosingBracket() {
-        return _lines[_lineIndex][_charIndex] == ']';
+        return _lines[_lineIndex][_columnIndex] == ']';
     }
     private void ParseNumber(int index, JsonArray array) {
-        int start = _charIndex;
+        int start = _columnIndex;
         int startLine = _lineIndex;
         while (true) {
             if (_lineIndex > startLine) {
@@ -223,11 +223,11 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                     break;
                 }
 
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
             }
 
             if (IsWhiteSpace() || IsComma() || IsClosingBracket()) {
-                string number = _lines[_lineIndex][start.._charIndex];
+                string number = _lines[_lineIndex][start.._columnIndex];
                 if (long.TryParse(number, out long longValue)) {
                     array.Add(index, longValue);
                     break;
@@ -238,13 +238,13 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                     break;
                 }
 
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
             }
 
             AdvanceCharIndex();
         }
 
-        _charIndex--;
+        _columnIndex--;
     }
 
     /// <summary>
@@ -254,7 +254,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     /// <param name="key"></param>
     /// <exception cref="UnexpectedCharacterException"></exception>
     private void ParseNumber(JsonObject obj, string key) {
-        int start = _charIndex;
+        int start = _columnIndex;
         int startLine = _lineIndex;
         while (true) {
             if (_lineIndex > startLine) {
@@ -269,11 +269,11 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                     break;
                 }
 
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
             }
 
             if (IsWhiteSpace() || IsComma() || IsClosingBrace() || IsClosingBracket()) {
-                string number = _lines[_lineIndex][start.._charIndex];
+                string number = _lines[_lineIndex][start.._columnIndex];
                 if (long.TryParse(number, out long longValue)) {
                     obj.Add(key, longValue);
                     break;
@@ -284,35 +284,35 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                     break;
                 }
 
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
             }
 
             AdvanceCharIndex();
         }
 
         // bring _charIndex back to the last character of the number
-        _charIndex--;
+        _columnIndex--;
     }
     private bool IsComma() {
-        return _lines[_lineIndex][_charIndex] == ',';
+        return _lines[_lineIndex][_columnIndex] == ',';
     }
     private bool IsQuote() {
-        return _lines[_lineIndex][_charIndex] == '"';
+        return _lines[_lineIndex][_columnIndex] == '"';
     }
     private bool IsClosingBrace() {
-        return _lines[_lineIndex][_charIndex] == '}';
+        return _lines[_lineIndex][_columnIndex] == '}';
     }
     private void ParseNull() {
-        if (_lines[_lineIndex].Substring(_charIndex, 4) == "null") {
-            _charIndex += 3;
+        if (_lines[_lineIndex].Substring(_columnIndex, 4) == "null") {
+            _columnIndex += 3;
             return;
         }
 
-        throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+        throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
     }
 
     /// <summary>
-    /// Parses a string between two unescaped quotes. Sets <see cref="_charIndex"/> to the index of the closing quote.
+    /// Parses a string between two unescaped quotes. Sets <see cref="_columnIndex"/> to the index of the closing quote.
     /// </summary>
     /// <returns></returns>
     /// <exception cref="MissingClosingQuoteException"></exception>
@@ -321,15 +321,15 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     /// <returns>the parsed string</returns>
     private string ParseString() {
         AdvanceCharIndex();
-        int start = _charIndex;
+        int start = _columnIndex;
         while (true) {
-            if (_lines[_lineIndex][_charIndex] == '"') {
-                if (_lines[_lineIndex][_charIndex - 1] != '\\') {
+            if (_lines[_lineIndex][_columnIndex] == '"') {
+                if (_lines[_lineIndex][_columnIndex - 1] != '\\') {
                     break;
                 }
 
                 int backslashes = 0;
-                for (int i = _charIndex - 1; i > start; i--) {
+                for (int i = _columnIndex - 1; i > start; i--) {
                     if (_lines[_lineIndex][i] == '\\') {
                         backslashes++;
                     } else {
@@ -342,7 +342,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
                 }
 
                 AdvanceCharIndex();
-                if (_charIndex == _lines[_lineIndex].Length) {
+                if (_columnIndex == _lines[_lineIndex].Length) {
                     throw new MissingClosingQuoteException(_lineIndex);
                 }
             }
@@ -350,28 +350,28 @@ public sealed class JsonParser(IEnumerable<string> lines) {
             AdvanceCharIndex();
         }
 
-        return _lines[_lineIndex][start.._charIndex];
+        return _lines[_lineIndex][start.._columnIndex];
     }
 
     /// <summary>
-    /// Parses a boolean value. Sets <see cref="_charIndex"/> to the index of the last character of the boolean value.
+    /// Parses a boolean value. Sets <see cref="_columnIndex"/> to the index of the last character of the boolean value.
     /// </summary>
     /// <exception cref="UnexpectedCharacterException"></exception>
     /// <returns><see cref="true"/> or <see cref="false"/></returns>
     private bool ParseBoolean() {
-        if (_lines[_lineIndex][_charIndex] == 't') {
-            if (_lines[_lineIndex].Substring(_charIndex, 4) == "true") {
-                _charIndex += 3;
+        if (_lines[_lineIndex][_columnIndex] == 't') {
+            if (_lines[_lineIndex].Substring(_columnIndex, 4) == "true") {
+                _columnIndex += 3;
                 return true;
             }
         } else {
-            if (_lines[_lineIndex].Substring(_charIndex, 5) == "false") {
-                _charIndex += 4;
+            if (_lines[_lineIndex].Substring(_columnIndex, 5) == "false") {
+                _columnIndex += 4;
                 return false;
             }
         }
 
-        throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+        throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
     }
 
     /// <summary>
@@ -382,9 +382,9 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     private void SkipWhitespace(TokenType token) {
         while (IsWhiteSpace()) {
             AdvanceCharIndex();
-            if (_charIndex == _lines[_lineIndex].Length) {
+            if (_columnIndex == _lines[_lineIndex].Length) {
                 _lineIndex++;
-                _charIndex = 0;
+                _columnIndex = 0;
 
                 if (_lineIndex == _lines.Count) {
                     throw token switch {
@@ -399,34 +399,34 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         }
 
         if (token != TokenType.Any) {
-            char c = _lines[_lineIndex][_charIndex];
+            char c = _lines[_lineIndex][_columnIndex];
             switch (token) {
                 case TokenType.OpeningBracket when c != '[':
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 case TokenType.ClosingBracket when c != ']':
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 case TokenType.Quote when c != '"':
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 case TokenType.Colon when c != ':':
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 case TokenType.OpeningBrace when c != '{':
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 case TokenType.ClosingBrace when c != '}':
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 case TokenType.Comma when c != ',':
-                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
             }
         }
     }
     private bool IsWhiteSpace() {
-        char c = _lines[_lineIndex][_charIndex];
+        char c = _lines[_lineIndex][_columnIndex];
         return char.IsWhiteSpace(c) || c == '\n' || c == '\r' || c == '\t';
     }
     private void AdvanceCharIndex() {
-        _charIndex++;
-        if (_charIndex == _lines[_lineIndex].Length) {
+        _columnIndex++;
+        if (_columnIndex == _lines[_lineIndex].Length) {
             _lineIndex++;
-            _charIndex = 0;
+            _columnIndex = 0;
         }
     }
 }

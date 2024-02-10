@@ -1,4 +1,4 @@
-namespace Parser;
+namespace JsonParser;
 
 using System.Text;
 public sealed class JsonArray {
