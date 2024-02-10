@@ -111,28 +111,28 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
         switch (_lines[_lineIndex][_charIndex]) {
             case '{':
-                JsonObject nestedObj = ParseObject();
-                obj.Add(key, nestedObj);
-                break;
+            JsonObject nestedObj = ParseObject();
+            obj.Add(key, nestedObj);
+            break;
             case '[':
-                JsonArray nestedArray = ParseArray();
-                obj.Add(key, nestedArray);
-                break;
+            JsonArray nestedArray = ParseArray();
+            obj.Add(key, nestedArray);
+            break;
             case '"':
-                obj.Add(key, ParseString());
-                break;
+            obj.Add(key, ParseString());
+            break;
             case 't':
             case 'f':
-                obj.Add(key, ParseBoolean());
-                break;
+            obj.Add(key, ParseBoolean());
+            break;
             case 'n':
-                ParseNull();
-                obj.Add(key);
-                break;
+            ParseNull();
+            obj.Add(key);
+            break;
             case '-':
             default:
-                ParseNumber(obj, key);
-                break;
+            ParseNumber(obj, key);
+            break;
         }
     }
     private JsonArray ParseArray() {
@@ -180,28 +180,28 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     private void AddValue(int index, JsonArray arr) {
         switch (_lines[_lineIndex][_charIndex]) {
             case '{':
-                JsonObject nestedObj = ParseObject();
-                arr.Add(index, nestedObj);
-                break;
+            JsonObject nestedObj = ParseObject();
+            arr.Add(index, nestedObj);
+            break;
             case '[':
-                JsonArray nestedArray = ParseArray();
-                arr.Add(index, nestedArray);
-                break;
+            JsonArray nestedArray = ParseArray();
+            arr.Add(index, nestedArray);
+            break;
             case '"':
-                arr.Add(index, ParseString());
-                break;
+            arr.Add(index, ParseString());
+            break;
             case 't':
             case 'f':
-                arr.Add(index, ParseBoolean());
-                break;
+            arr.Add(index, ParseBoolean());
+            break;
             case 'n':
-                ParseNull();
-                arr.Add(index);
-                break;
+            ParseNull();
+            arr.Add(index);
+            break;
             case '-':
             default:
-                ParseNumber(index, arr);
-                break;
+            ParseNumber(index, arr);
+            break;
         }
     }
     private bool IsClosingBracket() {
@@ -402,19 +402,19 @@ public sealed class JsonParser(IEnumerable<string> lines) {
             char c = _lines[_lineIndex][_charIndex];
             switch (token) {
                 case TokenType.OpeningBracket when c != '[':
-                    throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
                 case TokenType.ClosingBracket when c != ']':
-                    throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
                 case TokenType.Quote when c != '"':
-                    throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
                 case TokenType.Colon when c != ':':
-                    throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
                 case TokenType.OpeningBrace when c != '{':
-                    throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
                 case TokenType.ClosingBrace when c != '}':
-                    throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
                 case TokenType.Comma when c != ',':
-                    throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
+                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _charIndex);
             }
         }
     }

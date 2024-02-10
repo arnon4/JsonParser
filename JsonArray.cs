@@ -1,7 +1,6 @@
 namespace Parser;
 
 using System.Text;
-using JsonExceptions;
 public sealed class JsonArray {
     private readonly Dictionary<int, string> _strings = [];
     private readonly Dictionary<int, long> _longs = [];
@@ -47,7 +46,7 @@ public sealed class JsonArray {
                 Type t when t == typeof(bool) => (T)(object)_bools[index],
                 Type t when t == typeof(JsonObject) => (T)(object)_objects[index],
                 Type t when t == typeof(JsonArray) => (T)(object)_arrays[index],
-                _ =>  default
+                _ => default
             };
         } catch {
             return default;
