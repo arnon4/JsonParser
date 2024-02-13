@@ -143,6 +143,7 @@ public sealed class JsonArray {
         foreach (var (key, value) in _arrays) {
             values.Add(key, value.ToString());
         }
+
         if (values.Count == 0) {
             return "[]";
         }
