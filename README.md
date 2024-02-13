@@ -2,7 +2,7 @@
 
 ## Why JsonParser?
 
-I wanted to be able to dynamically parse JSON in C# without having to create a class for every JSON object I wanted to parse.
+I wanted to be able to dynamically parse JSON in C# without having to create a class for every JSON object, while maintaining type-safety at compile-time.
 I also wanted to be able to parse JSON objects that I didn't know the structure of at compile time.
 
 I find this useful for parsing configuration files which can grow quite large, and because of this are annoying to maintain as C# classes.
