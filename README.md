@@ -47,6 +47,7 @@ You can parse it like this:
 using JsonParser;
 
 var lines = File.ReadAllLines("example.json");
+JsonParser parser = new(lines);
 parser.Parse();
 JsonArray jsonArray = parser.GetParsed<JsonArray>(); // we can retrieve either a JsonArray or a JsonObject
 
