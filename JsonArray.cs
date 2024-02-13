@@ -148,7 +148,6 @@ public sealed class JsonArray {
             return "[]";
         }
 
-
         StringBuilder sb = new();
         sb.Append('[');
         foreach (var (key, value) in values) {
