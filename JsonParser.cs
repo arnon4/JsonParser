@@ -1,6 +1,6 @@
 using JsonExceptions;
 
-namespace JsonParser;
+namespace DynamicJsonParser;
 public sealed class JsonParser(IEnumerable<string> lines) {
     private readonly List<string> _lines = lines.ToList();
     private int _lineIndex = 0;
@@ -20,11 +20,11 @@ public sealed class JsonParser(IEnumerable<string> lines) {
         }
     }
     public T GetParsed<T>() {
-        if (_object is not null) {
+        if (_object is not null && typeof(T) == typeof(JsonObject)) {
             return (T)(object)_object;
         }
 
-        if (_array is not null) {
+        if (_array is not null && typeof(T) == typeof(JsonArray)) {
             return (T)(object)_array;
         }
 

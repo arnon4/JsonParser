@@ -1,4 +1,4 @@
-﻿namespace JsonParser;
+﻿namespace DynamicJsonParser;
 
 using System;
 using System.Text;

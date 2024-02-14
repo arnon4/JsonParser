@@ -1,4 +1,4 @@
-namespace JsonParser;
+namespace DynamicJsonParser;
 
 using System.Text;
 public sealed class JsonArray {
