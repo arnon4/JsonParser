@@ -31,6 +31,7 @@ public sealed class JsonObject {
     internal void Add(string key, JsonArray value) {
         _arrays.Add(key, value);
     }
+
     /// <summary>
     /// Checks if the specified key exists in the <see cref="JsonObject"/>.
     /// </summary>
