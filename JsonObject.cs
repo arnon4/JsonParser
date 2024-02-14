@@ -43,6 +43,7 @@ public sealed class JsonObject {
         _nulls.Contains(key) || _objects.ContainsKey(key) ||
         _arrays.ContainsKey(key);
     }
+
     /// <summary>
     /// Returns the value at the specified key. If the key is not found, returns <see langword="null"/>.
     /// It is recommended to use <see cref="ContainsKey"/> to check if the key exists.
