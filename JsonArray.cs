@@ -1,7 +1,7 @@
 namespace DynamicJsonParser;
 
 using System.Text;
-public sealed class JsonArray {
+public sealed class JsonArray : JsonEntity {
     private readonly Dictionary<int, string> _strings = [];
     private readonly Dictionary<int, long> _longs = [];
     private readonly Dictionary<int, decimal> _decimals = [];
@@ -120,7 +120,7 @@ public sealed class JsonArray {
         }
         return unique;
     }
-    public override string ToString() {
+    internal override string Serialize() {
         Dictionary<int, string> values = [];
         foreach (var (key, value) in _strings) {
             values.Add(key, $"\"{value}\"");
