@@ -11,41 +11,120 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     private JsonArray? _array;
     public void Parse() {
         SkipWhitespace(TokenType.Any);
-        if (IsOpeningBrace()) {
-            _object = ParseObject();
-        } else if (IsOpeningBracket()) {
-            _array = ParseArray();
-        } else {
-            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
-        }
-    }
-    public T GetParsed<T>() {
-        if (_object is not null && typeof(T) == typeof(JsonObject)) {
-            return (T)(object)_object;
-        }
+        Stack<JsonEntity> stack = new();
+        Stack<string> keys = new();
+        int arrayIndex = 0;
+        bool hasDanglingComma = false;
 
-        if (_array is not null && typeof(T) == typeof(JsonArray)) {
-            return (T)(object)_array;
-        }
+        while (_lineIndex < _lines.Count) {
+            if (IsOpeningBrace()) {
+                stack.Push(new JsonObject());
+                AdvanceCharIndex();
+            } else if (IsOpeningBracket()) {
+                stack.Push(new JsonArray());
+                AdvanceCharIndex();
+            } else {
+                if (stack.Count == 0) {
+                    throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
+                }
 
-        throw new InvalidOperationException("Invalid JSON input");
+                if (stack.Peek() is JsonObject j) {
+                    if (!IsQuote() && !IsClosingBrace()) {
+                        throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
+                    }
+
+                    if (IsClosingBrace()) {
+                        if (hasDanglingComma) {
+                            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
+                        }
+
+                        stack.Pop();
+                        if (stack.Count == 0) {
+                            _object = j;
+                            return;
+                        }
+
+                        if (stack.Peek() is JsonObject parentObj) {
+                            if (keys.Count == 0) {
+                                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
+                            }
+                            parentObj.Add(keys.Pop(), j);
+                        } else {
+                            JsonArray parentArr = (JsonArray)stack.Peek();
+                            parentArr.Add(arrayIndex, j);
+                            arrayIndex++;
+                        }
+                    }
+
+                    if (keys.Count == 0) {
+                        if (!IsQuote()) {
+                            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
+                        }
+                        keys.Push(ParseString());
+                        AdvanceCharIndex();
+                        SkipWhitespace(TokenType.Colon);
+                    } else {
+                       AddValue(j, keys.Pop());
+                       AdvanceCharIndex();
+                       if (IsComma()) {
+                           AdvanceCharIndex();
+                           hasDanglingComma = true;
+                       } else {
+                           hasDanglingComma = false;
+                       } 
+                    }
+                }
+
+                if (stack.Peek() is JsonArray a) {
+                    if (!IsQuote() && !IsClosingBracket()) {
+                        throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
+                    }
+
+                    if (IsClosingBracket()) {
+                        stack.Pop();
+                        arrayIndex = 0;
+                        if (stack.Count == 0) {
+                            _array = a;
+                            return;
+                        }
+
+                        if (stack.Peek() is JsonObject parentObj) {
+                            if (keys.Count == 0) {
+                                throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
+                            }
+                            parentObj.Add(keys.Pop(), a);
+                        } else {
+                            JsonArray parentArr = (JsonArray)stack.Peek();
+                            parentArr.Add(arrayIndex, a);
+                            arrayIndex++;
+                        }
+                    }
+
+                    AddValue(arrayIndex, a);
+                    AdvanceCharIndex();
+                    if (IsComma()) {
+                        AdvanceCharIndex();
+                        hasDanglingComma = true;
+                    } else {
+                        hasDanglingComma = false;
+                    }
+                }
+            }
+        }
     }
     public T? Get<T>(string key) {
         if (_object is null) {
-            throw new InvalidOperationException("The JSON input is an array, not an object");
+            return default;
         }
 
         return _object.Get<T>(key);
     }
     public T? Get<T>(int index) {
         if (_array is null) {
-            throw new InvalidOperationException("The JSON input is an object, not an array");
+            return default;
         }
 
         return _array.Get<T>(index);
-    }
-    public override string ToString() {
-        return _object is not null ? _object.ToString() : _array?.ToString() ?? "";
     }
     private bool IsOpeningBracket() {
         return _lines[_lineIndex][_columnIndex] == '[';
@@ -53,57 +132,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
     private bool IsOpeningBrace() {
         return _lines[_lineIndex][_columnIndex] == '{';
     }
-
-    private JsonObject ParseObject() {
-        if (_lines[_lineIndex].Length > 1) {
-            AdvanceCharIndex();
-        } else {
-            _lineIndex++;
-            _columnIndex = 0;
-        }
-
-        JsonObject obj = new();
-
-        SkipWhitespace(TokenType.Any);
-
-        if (IsClosingBrace()) {
-            return obj;
-        }
-
-        if (!IsQuote()) {
-            throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
-        }
-
-        while (true) {
-            string key = ParseString();
-            AdvanceCharIndex();
-
-            SkipWhitespace(TokenType.Colon);
-            AdvanceCharIndex();
-            SkipWhitespace(TokenType.Any);
-            AddValue(obj, key);
-
-            AdvanceCharIndex();
-            SkipWhitespace(TokenType.Any);
-            if (_lineIndex == _lines.Count) {
-                throw new UnexpectedEndOfInputException(_lineIndex);
-            }
-
-            if (!IsComma()) {
-                break;
-            }
-
-            AdvanceCharIndex();
-            SkipWhitespace(TokenType.Quote);
-        }
-
-        if (!IsClosingBrace()) {
-            throw new MissingClosingBraceException(_lineIndex);
-        }
-
-        return obj;
-    }
-
     private void AddValue(JsonObject obj, string key) {
         if (obj.ContainsKey(key)) {
             throw new DuplicateKeyException(key, _lineIndex, _columnIndex);
@@ -111,12 +139,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
         switch (_lines[_lineIndex][_columnIndex]) {
             case '{':
-            JsonObject nestedObj = ParseObject();
-            obj.Add(key, nestedObj);
-            break;
             case '[':
-            JsonArray nestedArray = ParseArray();
-            obj.Add(key, nestedArray);
             break;
             case '"':
             obj.Add(key, ParseString());
@@ -135,57 +158,10 @@ public sealed class JsonParser(IEnumerable<string> lines) {
             break;
         }
     }
-    private JsonArray ParseArray() {
-        if (_lines[_lineIndex].Length > 1) {
-            AdvanceCharIndex();
-        } else {
-            _lineIndex++;
-            _columnIndex = 0;
-        }
-
-        JsonArray array = new();
-
-        SkipWhitespace(TokenType.Any);
-
-        if (IsClosingBracket()) {
-            return array;
-        }
-
-        int key = 0;
-        while (true) {
-            SkipWhitespace(TokenType.Any);
-
-            AddValue(key, array);
-
-            AdvanceCharIndex();
-            SkipWhitespace(TokenType.Any);
-            if (_lineIndex == _lines.Count) {
-                throw new UnexpectedEndOfInputException(_lineIndex);
-            }
-
-            if (!IsComma()) {
-                break;
-            }
-
-            AdvanceCharIndex();
-            key++;
-        }
-
-        if (!IsClosingBracket()) {
-            throw new MissingClosingBracketException(_lineIndex);
-        }
-
-        return array;
-    }
     private void AddValue(int index, JsonArray arr) {
         switch (_lines[_lineIndex][_columnIndex]) {
             case '{':
-            JsonObject nestedObj = ParseObject();
-            arr.Add(index, nestedObj);
-            break;
             case '[':
-            JsonArray nestedArray = ParseArray();
-            arr.Add(index, nestedArray);
             break;
             case '"':
             arr.Add(index, ParseString());
