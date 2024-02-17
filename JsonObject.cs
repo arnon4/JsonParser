@@ -2,7 +2,7 @@
 
 using System;
 using System.Text;
-public sealed class JsonObject {
+public sealed class JsonObject : JsonEntity {
     private readonly Dictionary<string, string> _strings = [];
     private readonly Dictionary<string, long> _longs = [];
     private readonly Dictionary<string, decimal> _decimals = [];
@@ -119,7 +119,7 @@ public sealed class JsonObject {
         return _strings.Count + _longs.Count + _decimals.Count + _bools.Count +
         _nulls.Count + _objects.Count + _arrays.Count;
     }
-    public override string ToString() {
+    internal override string Serialize() {
         Dictionary<string, string> values = [];
         foreach (var (key, value) in _strings) {
             values.Add(key, $"\"{value}\"");
