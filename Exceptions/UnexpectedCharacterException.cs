@@ -1,6 +1,5 @@
 namespace JsonExceptions;
 
-public sealed class UnexpectedCharacterException : Exception {
-    public UnexpectedCharacterException(string line, int lineIndex, int columnIndex) :
-        base($"Unexpected character '{line[lineIndex]}' at {lineIndex + 1}:{columnIndex + 1}") { }
+public sealed class UnexpectedCharacterException(string line, int lineIndex, int columnIndex) :
+    Exception($"Unexpected character '{line[columnIndex]}' at {lineIndex + 1}:{columnIndex + 1}") {
 }
