@@ -1,4 +1,4 @@
 namespace JsonExceptions;
-public sealed class MissingColonException : Exception {
-    public MissingColonException(int lineIndex) : base($"Missing colon at line {lineIndex}") { }
+public sealed class MissingColonException(int lineIndex) :
+    Exception($"Missing colon at line {lineIndex}") {
 }

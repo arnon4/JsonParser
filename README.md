@@ -1,15 +1,12 @@
 # JsonParser - A Dynamic Json Parser for C\#
 
-## Why JsonParser?
+## What is JsonParser
 
-I wanted to be able to dynamically parse JSON in C# without having to create a class for every JSON object, while maintaining type-safety at compile-time.
-I also wanted to be able to parse JSON objects that I didn't know the structure of at compile time.
-
-I find this useful for parsing configuration files which can grow quite large, and because of this are annoying to maintain as C# classes.
+A library for dynamic JSON parsing in C#. JsonParser provides the ability to parse JSON dynamically at runtime while still having the ability to inspect value types, and without the need to create a class for serialization.
 
 ## Quickstart
 
-Using the following JSON object as an example, stored in example.json:
+Using the following JSON object as an example, stored in `example.json`:
 
 ```JSON
 [
@@ -48,13 +45,12 @@ using JsonParser;
 
 var lines = File.ReadAllLines("example.json");
 JsonParser parser = new(lines);
-parser.Parse();
-JsonArray jsonArray = parser.GetParsed<JsonArray>(); // we can retrieve either a JsonArray or a JsonObject
+var jsonArray = parser.Get<JsonArray>(); // we can retrieve either a JsonArray or a JsonObject
 
-string firstItem = jsonArray.Get<string>(0)!; // "1"
-double thirdItem = jsonArray.Get<double>(2); // 3.2
-bool fifthItem = jsonArray.Get<bool>(4); // false
-string nestedNestedCity = jsonArray.Get<JsonObject>(5)!.Get<JsonObject>("address")!.Get<string>("city")!; // "New York"
-object? nullValue = jsonArray.Get<JsonArray>(6)!.Get<object?>(2); // null
+var firstItem = jsonArray.Get<string>(0)!; // "1"
+var thirdItem = jsonArray.Get<double>(2); // 3.2
+var fifthItem = jsonArray.Get<bool>(4); // false
+var nestedNestedCity = jsonArray.Get<JsonObject>(5)!.Get<JsonObject>("address")!.Get<string>("city")!; // "New York"
+var nullValue = jsonArray.Get<JsonArray>(6)!.Get<object?>(2); // null
 Console.WriteLine(jsonArray); //["1", "2", 3.2, false, null, {"name": "Alex", "age": 30, "isStudent": false, "address": {"city": "New York", "country": "USA"}, "hobbies": ["reading", "music", "movies"]}, ["1", 2, false, null]]
 ```

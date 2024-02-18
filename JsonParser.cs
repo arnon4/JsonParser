@@ -1,19 +1,41 @@
 using JsonExceptions;
 
 namespace DynamicJsonParser;
-public sealed class JsonParser(IEnumerable<string> lines) {
-    private readonly List<string> _lines = lines.ToList();
+
+/// <summary>
+/// A parser for JSON input. Takes a string or a list of strings and parses it into a <see cref="JsonObject"/> or a <see cref="JsonArray"/>.
+/// </summary>
+public sealed class JsonParser {
+    private readonly List<string> _lines;
     private int _lineIndex = 0;
     private int _columnIndex = 0;
 
     // Either _object or _array will be non-null, but not both
     private JsonObject? _object;
     private JsonArray? _array;
+    private bool _isParsed = false;
+
+    /// <summary>
+    /// Constructs a new <see cref="JsonParser"/> with the given JSON input.
+    /// </summary>
+    /// <param name="lines">JSON input to be parsed.</param>
+    /// <param name="parse">Optional. If false, JSON will not be immediately parsed.</param>
+    public JsonParser(IEnumerable<string> lines, bool parse = true) {
+        _lines = lines.ToList();
+
+        if (parse) {
+            Parse();
+        }
+    }
     /// <summary>
     /// Parses the JSON input and stores it internally either as a <see cref="JsonObject"/> or a <see cref="JsonArray"/>.
     /// </summary>
     /// <exception cref="UnexpectedCharacterException"></exception>
     public void Parse() {
+        if (_isParsed) {
+            return;
+        }
+
         SkipWhitespace(TokenType.Any);
         Stack<JsonEntity> elements = [];
         Stack<string> keys = [];
@@ -55,6 +77,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
                     if (objValue is JsonObject finalObj) {
                         _object = finalObj;
+                        _isParsed = true;
                         return;
                     }
                     throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
@@ -92,6 +115,7 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
                     if (arrValue is JsonArray finalArray) {
                         _array = finalArray;
+                        _isParsed = true;
                         return;
                     }
                     throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
@@ -154,6 +178,12 @@ public sealed class JsonParser(IEnumerable<string> lines) {
             }
         }
     }
+    /// <summary>
+    /// Returns the parsed JSON as a <see cref="JsonObject"/> or <see cref="JsonArray"/>.
+    /// </summary>
+    /// <typeparam name="T">Either <see cref="JsonObject"/> or <see cref="JsonArray"/></typeparam>
+    /// <returns>The parsed JSON.</returns>
+    /// <exception cref="ArgumentException"></exception>
     public T? Get<T>() {
         if (typeof(T) != typeof(JsonObject) && typeof(T) != typeof(JsonArray)) {
             throw new ArgumentException("Type must be JsonObject or JsonArray", nameof(T));
@@ -255,7 +285,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
         _columnIndex--;
     }
-
     /// <summary>
     /// Parses a number and adds it to the <see cref="JsonObject"/> with the given key.
     /// </summary>
@@ -319,7 +348,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
         throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
     }
-
     /// <summary>
     /// Parses a string between two unescaped quotes. Sets <see cref="_columnIndex"/> to the index of the closing quote.
     /// </summary>
@@ -361,7 +389,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
         return _lines[_lineIndex][start.._columnIndex];
     }
-
     /// <summary>
     /// Parses a boolean value. Sets <see cref="_columnIndex"/> to the index of the last character of the boolean value.
     /// </summary>
@@ -382,7 +409,6 @@ public sealed class JsonParser(IEnumerable<string> lines) {
 
         throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
     }
-
     /// <summary>
     /// Skips whitespace until the next non-whitespace character is found.
     /// If the end of the input is reached, an exception is thrown based on the token type. 
@@ -438,14 +464,14 @@ public sealed class JsonParser(IEnumerable<string> lines) {
             _columnIndex = 0;
         }
     }
-}
-public enum TokenType {
-    OpeningBrace,
-    ClosingBrace,
-    OpeningBracket,
-    ClosingBracket,
-    Colon,
-    Comma,
-    Quote,
-    Any
+    private enum TokenType {
+        OpeningBrace,
+        ClosingBrace,
+        OpeningBracket,
+        ClosingBracket,
+        Colon,
+        Comma,
+        Quote,
+        Any
+    }
 }

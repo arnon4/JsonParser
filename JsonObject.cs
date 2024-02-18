@@ -2,6 +2,10 @@
 
 using System;
 using System.Text;
+
+/// <summary>
+/// Represents a JSON object.
+/// </summary>
 public sealed class JsonObject : JsonEntity {
     private readonly Dictionary<string, string> _strings = [];
     private readonly Dictionary<string, long> _longs = [];

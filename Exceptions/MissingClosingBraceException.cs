@@ -1,4 +1,4 @@
 namespace JsonExceptions;
-public sealed class MissingClosingBraceException : Exception {
-    public MissingClosingBraceException(int lineIndex) : base($"Missing closing brace at line {lineIndex}") { }
+public sealed class MissingClosingBraceException(int lineIndex) :
+    Exception($"Missing closing brace at line {lineIndex}") {
 }

@@ -1,6 +1,10 @@
 namespace DynamicJsonParser;
 
 using System.Text;
+
+/// <summary>
+/// Represents a JSON array.
+/// </summary>
 public sealed class JsonArray : JsonEntity {
     private readonly Dictionary<int, string> _strings = [];
     private readonly Dictionary<int, long> _longs = [];
