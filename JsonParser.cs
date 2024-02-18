@@ -194,6 +194,47 @@ public sealed class JsonParser {
             _ => default
         };
     }
+    /// <summary>
+    /// Serializes a JSON object to a C# object.
+    /// </summary>
+    /// <typeparam name="T">The <see cref="Type"/> of class the JSON will be serialized into.</typeparam>
+    /// <returns>A new instance of type <typeparamref name="T"/>.</returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public T Serialize<T>() where T : class {
+        if (_object is null) {
+            throw new InvalidOperationException("Only JSON objects can be serialized to a C# object.");
+        }
+
+        T? obj = typeof(T).GetConstructor(Type.EmptyTypes)?.Invoke(null) as T;
+        ArgumentNullException.ThrowIfNull(obj);
+
+        foreach (var prop in obj.GetType().GetProperties()) {
+            var name = prop.Name;
+            if (!_object.ContainsKey(name)) {
+                continue;
+            }
+
+            var propType = prop.PropertyType;
+
+            if (propType == typeof(string) && (_object.Type(name) == typeof(string) || _object.Type(name) is null)) {
+                prop.SetValue(obj, _object.Get<string>(name));
+            } else if (propType == typeof(int) && _object.Type(name) == typeof(int)) {
+                prop.SetValue(obj, _object.Get<int>(name));
+            } else if (propType == typeof(long) && _object.Type(name) == typeof(long)) {
+                prop.SetValue(obj, _object.Get<long>(name));
+            } else if (propType == typeof(decimal) && _object.Type(name) == typeof(decimal)) {
+                prop.SetValue(obj, _object.Get<decimal>(name));
+            } else if (propType == typeof(bool) && _object.Type(name) == typeof(bool)) {
+                prop.SetValue(obj, _object.Get<bool>(name));
+            } else if (propType == typeof(JsonObject) && (_object.Type(name) == typeof(JsonObject) || _object.Type(name) is null)) {
+                prop.SetValue(obj, _object.Get<JsonObject>(name));
+            } else if (propType == typeof(JsonArray) && (_object.Type(name) == typeof(JsonArray) || _object.Type(name) is null)) {
+                prop.SetValue(obj, _object.Get<JsonArray>(name));
+            }
+        }
+
+        return obj;
+    }
     private bool IsOpeningBracket() {
         return _lines[_lineIndex][_columnIndex] == '[';
     }
