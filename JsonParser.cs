@@ -198,7 +198,7 @@ public sealed class JsonParser {
     /// Serializes a JSON object to a C# object.
     /// </summary>
     /// <typeparam name="T">The <see cref="Type"/> of class the JSON will be serialized into.</typeparam>
-    /// <returns>A new instance of type <typeparamref name="T"/>.</returns>
+    /// <returns>A new instance of type <typeparamref name="T"/>, with relevant parsed fields filled.</returns>
     /// <exception cref="InvalidOperationException"></exception>
     public T Serialize<T>() where T : class {
         if (_object is null) {
