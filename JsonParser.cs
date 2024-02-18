@@ -43,8 +43,7 @@ public sealed class JsonParser {
         bool danglingComma = false;
 
         while (_lineIndex < _lines.Count) {
-            char c = _lines[_lineIndex][_columnIndex];
-            if (c == '{') {
+            if (IsOpeningBrace()) {
                 elements.Push(new JsonObject());
                 AdvanceColumnIndex();
                 SkipWhitespace(TokenType.Any);
@@ -55,12 +54,12 @@ public sealed class JsonParser {
                     AdvanceColumnIndex();
                     SkipWhitespace(TokenType.Any);
                 }
-            } else if (c == '[') {
+            } else if (IsOpeningBracket()) {
                 elements.Push(new JsonArray());
                 AdvanceColumnIndex();
                 SkipWhitespace(TokenType.Any);
                 arrayIndicies.Push(0);
-            } else if (c == '}') {
+            } else if (IsClosingBrace()) {
                 if (elements.Count == 0) {
                     throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 }
@@ -97,7 +96,7 @@ public sealed class JsonParser {
 
                 AdvanceColumnIndex();
                 SkipWhitespace(TokenType.Any);
-            } else if (c == ']') {
+            } else if (IsClosingBracket()) {
                 if (elements.Count == 0) {
                     throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 }
@@ -135,7 +134,7 @@ public sealed class JsonParser {
 
                 AdvanceColumnIndex();
                 SkipWhitespace(TokenType.Any);
-            } else if (c == ',') {
+            } else if (IsComma()) {
                 if (elements.Count == 0) {
                     throw new UnexpectedCharacterException(_lines[_lineIndex], _lineIndex, _columnIndex);
                 }
