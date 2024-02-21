@@ -218,7 +218,7 @@ public sealed class JsonParser {
 
             if (propType == typeof(string) && (_object.Type(name) == typeof(string) || _object.Type(name) is null)) {
                 prop.SetValue(obj, _object.Get<string>(name));
-            } else if (propType == typeof(int) || propType == typeof(long) || propType == typeof(sbyte)) {
+            } else if (propType == typeof(int) || propType == typeof(long) || propType == typeof(sbyte) || propType == typeof(short)) {
                 var num = Convert.ChangeType(_object.Get<long>(name), propType);
                 prop.SetValue(obj, num);
             } 
