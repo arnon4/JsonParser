@@ -218,12 +218,13 @@ public sealed class JsonParser {
 
             if (propType == typeof(string) && (_object.Type(name) == typeof(string) || _object.Type(name) is null)) {
                 prop.SetValue(obj, _object.Get<string>(name));
-            } else if (propType == typeof(int) && _object.Type(name) == typeof(int)) {
-                prop.SetValue(obj, _object.Get<int>(name));
-            } else if (propType == typeof(long) && _object.Type(name) == typeof(long)) {
-                prop.SetValue(obj, _object.Get<long>(name));
-            } else if (propType == typeof(decimal) && _object.Type(name) == typeof(decimal)) {
-                prop.SetValue(obj, _object.Get<decimal>(name));
+            } else if (propType == typeof(int) || propType == typeof(long) || propType == typeof(sbyte)) {
+                var num = Convert.ChangeType(_object.Get<long>(name), propType);
+                prop.SetValue(obj, num);
+            } 
+            else if (propType == typeof(decimal) || propType == typeof(double) || propType == typeof(float)) {
+                var num = Convert.ChangeType(_object.Get<decimal>(name), propType);
+                prop.SetValue(obj, num);
             } else if (propType == typeof(bool) && _object.Type(name) == typeof(bool)) {
                 prop.SetValue(obj, _object.Get<bool>(name));
             } else if (propType == typeof(JsonObject) && (_object.Type(name) == typeof(JsonObject) || _object.Type(name) is null)) {
