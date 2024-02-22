@@ -21,7 +21,7 @@ public sealed class JsonParser {
     /// <param name="lines">JSON input to be parsed.</param>
     /// <param name="parse">Optional. If false, JSON will not be immediately parsed.</param>
     public JsonParser(IEnumerable<string> lines, bool parse = true) {
-        _lines = lines.ToList();
+        _lines = new(lines);
 
         if (parse) {
             Parse();
@@ -257,7 +257,7 @@ public sealed class JsonParser {
                 break;
             case 'n':
                 ParseNull();
-                obj.Add(key);
+                obj.Add(key); 
                 break;
             case '-':
             default:
