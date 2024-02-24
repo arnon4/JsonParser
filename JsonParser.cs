@@ -1,4 +1,5 @@
 using JsonExceptions;
+using System.Diagnostics;
 
 namespace DynamicJsonParser;
 
@@ -199,42 +200,61 @@ public sealed class JsonParser {
     /// </summary>
     /// <typeparam name="T">The <see cref="Type"/> of class the JSON will be serialized into.</typeparam>
     /// <returns>A new instance of type <typeparamref name="T"/>, with relevant parsed fields filled.</returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public T Serialize<T>() where T : class {
+    public T? Serialize<T>() where T : class {
+
         if (_object is null) {
-            throw new InvalidOperationException("Only JSON objects can be serialized to a C# object.");
+            return default;
         }
 
-        T? obj = typeof(T).GetConstructor(Type.EmptyTypes)?.Invoke(null) as T;
-        ArgumentNullException.ThrowIfNull(obj);
+        T? result = Activator.CreateInstance<T>();
+        if (result is null) {
+            return result;
+        }
 
-        foreach (var prop in obj.GetType().GetProperties()) {
-            var name = prop.Name;
-            if (!_object.ContainsKey(name)) {
-                continue;
-            }
+        Stack<Tuple<JsonObject, object>> objects = new();
+        objects.Push(new(_object, result));
 
-            var propType = prop.PropertyType;
+        JsonEntity? parseResult = _object is null ? _array : _object;
+        if (parseResult is null) {
+            return default;
+        }
 
-            if (propType == typeof(string) && (_object.Type(name) == typeof(string) || _object.Type(name) is null)) {
-                prop.SetValue(obj, _object.Get<string>(name));
-            } else if (propType == typeof(int) || propType == typeof(long) || propType == typeof(sbyte) || propType == typeof(short)) {
-                var num = Convert.ChangeType(_object.Get<long>(name), propType);
-                prop.SetValue(obj, num);
-            } 
-            else if (propType == typeof(decimal) || propType == typeof(double) || propType == typeof(float)) {
-                var num = Convert.ChangeType(_object.Get<decimal>(name), propType);
-                prop.SetValue(obj, num);
-            } else if (propType == typeof(bool) && _object.Type(name) == typeof(bool)) {
-                prop.SetValue(obj, _object.Get<bool>(name));
-            } else if (propType == typeof(JsonObject) && (_object.Type(name) == typeof(JsonObject) || _object.Type(name) is null)) {
-                prop.SetValue(obj, _object.Get<JsonObject>(name));
-            } else if (propType == typeof(JsonArray) && (_object.Type(name) == typeof(JsonArray) || _object.Type(name) is null)) {
-                prop.SetValue(obj, _object.Get<JsonArray>(name));
+        while (objects.Count > 0) {
+            var currentObject = objects.Pop();
+            var jsonObject = currentObject.Item1;
+            var currentResult = currentObject.Item2;
+
+            Debug.Assert(currentResult is not null);
+
+            foreach (var prop in currentResult.GetType().GetProperties()) {
+                var name = prop.Name;
+                if (!jsonObject.ContainsKey(name)) {
+                    continue;
+                }
+
+                var propType = prop.PropertyType;
+
+                if (propType == typeof(string) && (jsonObject.Type(name) == typeof(string))) {
+                    prop.SetValue(currentResult, jsonObject.Get<string>(name));
+                } else if (propType == typeof(int) || propType == typeof(long) || propType == typeof(sbyte) || propType == typeof(short)) {
+                    var num = Convert.ChangeType(jsonObject.Get<long>(name), propType);
+                    prop.SetValue(currentResult, num);
+                } else if (propType == typeof(decimal) || propType == typeof(double) || propType == typeof(float)) {
+                    var num = Convert.ChangeType(jsonObject.Get<decimal>(name), propType);
+                    prop.SetValue(currentResult, num);
+                } else if (propType == typeof(bool) && jsonObject.Type(name) == typeof(bool)) {
+                    prop.SetValue(currentResult, jsonObject.Get<bool>(name));
+                } else if (propType.IsClass && (jsonObject.Type(name) == typeof(JsonObject) || jsonObject.Type(name) == null)) {
+                    var internalObject = Activator.CreateInstance(propType);
+                    Debug.Assert(internalObject is not null);
+
+                    prop.SetValue(currentResult, internalObject);
+                    objects.Push(new(jsonObject.Get<JsonObject>(name)!, internalObject));
+                }
             }
         }
 
-        return obj;
+        return result;
     }
     private bool IsOpeningBracket() {
         return _lines[_lineIndex][_columnIndex] == '[';
@@ -257,7 +277,7 @@ public sealed class JsonParser {
                 break;
             case 'n':
                 ParseNull();
-                obj.Add(key); 
+                obj.Add(key);
                 break;
             case '-':
             default:
