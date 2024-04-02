@@ -41,7 +41,7 @@ Using the following JSON object as an example, stored in `example.json`:
 You can parse it like this:
 
 ```C#
-using JsonParser;
+using DynamicJsonParser;
 
 var lines = File.ReadAllLines("example.json");
 JsonParser parser = new(lines);
